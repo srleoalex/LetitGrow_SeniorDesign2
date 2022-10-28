@@ -69,7 +69,6 @@ void setup() {
   gravityTds.setAdcRange(1024);  //1024 for 10bit ADC;4096 for 12bit ADC
   gravityTds.begin();  //initialization
 
-  pinMode(waterLevelPin,INPUT);
 }
 
 // caluclates ph by averaging a series of ph values 
@@ -117,7 +116,7 @@ void printSensorVal(){
   float waterTempF = sensors.toFahrenheit(waterTempC);
 
   // read in water level sensor
-  int waterLevelVal = digitalRead(waterLevelPin);// read the level value of pin 7 and assign if to val
+  int waterLevelVal = digitalRead(waterLevelPin);// read the level value of pin A3 and assign if to val
 
   // read in TDS sensor
   gravityTds.setTemperature(waterTempC);  // set the temperature and execute temperature compensation
@@ -152,9 +151,26 @@ void printSensorVal(){
   Serial.print(tdsValue,0);
   Serial.println("ppm");
 
+  // pH Sensor
   Serial.print("pH: ");
   Serial.println(phSensorCalculations());
 
+}
+
+// function to run all pumps at once for testing
+void runAllPumps (){
+
+    digitalWrite(waterPumpPin, HIGH);
+    digitalWrite(phAcidPumpPin, HIGH);
+    digitalWrite(phBasePumpPin, HIGH);
+    digitalWrite(nutrientAPumpPin, HIGH);
+    digitalWrite(nutrientBPumpPin, HIGH);
+    delay(10000);
+    digitalWrite(waterPumpPin, LOW);
+    digitalWrite(phAcidPumpPin, LOW);
+    digitalWrite(phBasePumpPin, LOW);
+    digitalWrite(nutrientAPumpPin, LOW);
+    digitalWrite(nutrientBPumpPin, LOW);
 }
 
 // loop to check and raise water level
@@ -173,8 +189,14 @@ void waterSensorLoop(){
     // wait 5 minutes
     delay(300000);
 
+    // test delay 10 seconds
+    //  delay(10000)
+
     // read new water sensor value sensor
     waterLevelVal = digitalRead(waterLevelPin);
+
+    // read water level val to serial monitor
+    Serial.println(waterLevelVal);
   }
 }
 
@@ -212,6 +234,7 @@ void phSensorLoop(){
 // loop to check water tds and bring water tds within threshold values
 void tdsSensorLoop(){
   // read water tempterature value and calibrate the tds sensor
+  sensors.requestTemperatures(); 
   float waterTempC = sensors.getTempCByIndex(0);
   gravityTds.setTemperature(waterTempC);  // set the temperature and execute temperature compensation
   gravityTds.update();  //sample and calculate
@@ -221,18 +244,21 @@ void tdsSensorLoop(){
   while(tdsVal < tdsLow)
   {
     // if the water tds is too low run nutrientA pump for designated amount of time
-    if(tdsVal < tdsLow)
-    {
-      digitalWrite(nutrientAPumpPin, HIGH);
-      digitalWrite(nutrientBPumpPin, HIGH);
-      delay(nutrientPumpDelay);
-      digitalWrite(nutrientAPumpPin, LOW);
-      digitalWrite(nutrientBPumpPin, LOW);
 
-    }
+    digitalWrite(nutrientAPumpPin, HIGH);
+    digitalWrite(nutrientBPumpPin, HIGH);
+    delay(nutrientPumpDelay);
+    digitalWrite(nutrientAPumpPin, LOW);
+    digitalWrite(nutrientBPumpPin, LOW);
     
     // wait 5 minutes
     delay(300000);
+
+    // read water tempterature value and calibrate the tds sensor
+    sensors.requestTemperatures(); 
+    float waterTempC = sensors.getTempCByIndex(0);
+    gravityTds.setTemperature(waterTempC);  // set the temperature and execute temperature compensation
+    gravityTds.update();  //sample and calculate
 
     // read new ph sensor value sensor
     tdsVal = gravityTds.getTdsValue();
@@ -241,10 +267,18 @@ void tdsSensorLoop(){
 
 void loop() {
 
-  waterSensorLoop();
-  phSensorLoop();
-  tdsSensorLoop();
-  // checkAirHumidity();
+  // sensor loops
+  //waterSensorLoop();
+  //phSensorLoop();
+  //tdsSensorLoop();
+  //checkAirHumidity();
+
+  //testing sensors and pumps
+  runAllPumps();
+  //printSensorVal();
+
+  // test delay
+  delay(10000);
 
   // check sensors after an hour
   // 1 hour delay
