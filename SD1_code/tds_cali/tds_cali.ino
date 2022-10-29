@@ -6,7 +6,8 @@
 #define TdsSensorPin A2
 GravityTDS gravityTds;
 
-float temperature = 23.8,tdsValue = 0;
+// note could not calibrate tds when temperature was above 24.5
+float temperature = 24.5,tdsValue = 0;
 
 void setup()
 {
