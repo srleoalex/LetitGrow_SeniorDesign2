@@ -28,11 +28,8 @@ float tdsLow = 600;
 float tdsHigh = 1000; 
 
 // define pH variables and calibration value
-float calibration_value = 21.34+.5;
-int phval = 0; 
-unsigned long int avgval; 
-int buffer_arr[10],temp;
-float phAct;
+#include <Arduino.h>
+const float m = -6.16379; 
 int phPin = A1;
 // define ph range
 float phLow = 5;
@@ -69,37 +66,14 @@ void setup() {
   gravityTds.setAdcRange(1024);  //1024 for 10bit ADC;4096 for 12bit ADC
   gravityTds.begin();  //initialization
 
+  // set pump pins for output
+  pinMode(waterPumpPin,OUTPUT);
+  pinMode(phAcidPumpPin,OUTPUT);
+  pinMode(phBasePumpPin,OUTPUT);
+  pinMode(nutrientAPumpPin,OUTPUT);
+  pinMode(nutrientBPumpPin,OUTPUT);
 }
 
-// caluclates ph by averaging a series of ph values 
-int phSensorCalculations(){
-  for(int i=0;i<10;i++) 
-  { 
-      buffer_arr[i]=analogRead(phPin);
-      delay(30);
-  }
-    for(int i=0;i<9;i++)
-    {
-      for(int j=i+1;j<10;j++)
-      {
-        if(buffer_arr[i]>buffer_arr[j])
-        {
-          temp=buffer_arr[i];
-          buffer_arr[i]=buffer_arr[j];
-          buffer_arr[j]=temp;
-        }
-      }
-    }
-    avgval=0;
-    for(int i=2;i<8;i++)
-    {
-    avgval+=buffer_arr[i];
-    }
-    float volt=(float)avgval*5.0/1024/6; 
-    phAct = -5.70 * volt + calibration_value;
-
-    return phAct;
-}
 
 // function that reads and prints sensor values for testing
 void printSensorVal(){  
@@ -152,8 +126,11 @@ void printSensorVal(){
   Serial.println("ppm");
 
   // pH Sensor
-  Serial.print("pH: ");
-  Serial.println(phSensorCalculations());
+  float Po = analogRead(phPin) * 5.0 / 1024;
+  float phValue = 6.86 - (2.7 - Po) * m;
+  Serial.print("ph value = ");
+  Serial.println(phValue);
+
 
 }
 
@@ -203,8 +180,9 @@ void waterSensorLoop(){
 // loop to check water ph and bring water ph within threshold values
 void phSensorLoop(){
   // reads in ph sensor value
-  float phVal = phSensorCalculations();
-
+  float Po = analogRead(phPin) * 5.0 / 1024;
+  float phVal = 6.86 - (2.7 - Po) * m;
+  
   // loop while water ph is not within threshold values
   while(phVal < phLow || phVal > phHigh)
   {
@@ -227,7 +205,8 @@ void phSensorLoop(){
     delay(300000);
 
     // read new ph sensor value sensor
-    phVal = phSensorCalculations();
+    Po = analogRead(phPin) * 5.0 / 1024;
+    phVal = 6.86 - (2.7 - Po) * m;
   }
 }
 

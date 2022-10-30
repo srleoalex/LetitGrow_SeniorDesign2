@@ -1,5 +1,4 @@
 // refer to https://www.e-tinkers.com/2019/11/measure-ph-with-a-low-cost-arduino-ph-sensor-board/
-
 #include <Arduino.h>
 const int adcPin = A1;
   
