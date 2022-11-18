@@ -125,37 +125,39 @@ void printSensorVal(){
   gravityTds.update();  //sample and calculate
   float tdsValue = gravityTds.getTdsValue();  // then get the value
 
-  // print sensor values for testing
-  // Air/Hum sensor
-  Serial.print("AirHumidity: ");
-  Serial.print(airHumi);
-  Serial.print("%");
-
-  Serial.print("  |  "); 
-
-  Serial.print("AirTemperature: ");
-  Serial.print(airTempC);
-  Serial.print("°C ~ ");
-  Serial.print(airTempF);
-  Serial.println("°F");
-
-  // Water Temperature sensor
-  Serial.print("WaterTemp C:  ");
-  Serial.println(waterTempC);
-  Serial.print("WaterTemp F:  ");
-  Serial.println(waterTempF);
-
-  // Water Level Sensor
-  // 0 - Indicates no liquid, 1 - Indicates probe is submerged
-  Serial.println(waterLevelVal); // print the data from the sensor
+  // print sensor values for raspberry pi
 
   // TDS sensor
   Serial.print(tdsValue,0);
-  Serial.println("ppm");
+  Serial.print(" ");
 
   // pH Sensor
-  Serial.print("ph value = ");
-  Serial.println(getPhValue());
+  Serial.print(getPhValue());
+  Serial.print(" ");
+
+  // Water Level Sensor
+  // 0 - Indicates no liquid, 1 - Indicates probe is submerged
+  Serial.print(waterLevelVal); // print the data from the sensor
+  Serial.print(" "); 
+
+  // Water Temperature sensor
+  Serial.print(waterTempF);
+  Serial.print(" ");
+
+  // Air/Hum sensor
+  Serial.print(airHumi);
+  Serial.print(" ");
+
+  Serial.print(airTempF);
+  Serial.println(" ");
+
+
+
+
+
+
+
+
 
 
 }
