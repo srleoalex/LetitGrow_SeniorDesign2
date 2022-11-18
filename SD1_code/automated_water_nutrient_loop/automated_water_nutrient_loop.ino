@@ -104,7 +104,7 @@ double getPhValue(){
 
 
 // function that reads and prints sensor values for testing
-void printSensorVal(){  
+void printSensorValRasp(){  
   // read air humidity
   float airHumi = dht.readHumidity();
   // read air temperature as Celsius
@@ -149,20 +149,9 @@ void printSensorVal(){
   Serial.print(" ");
 
   Serial.print(airTempF);
-  Serial.println(" ");
-
-
-
-
-
-
-
-
-
-
 }
 
-void printSensorValRasp(){  
+void printSensorVal(){  
   // read air humidity
   float airHumi = dht.readHumidity();
   // read air temperature as Celsius
