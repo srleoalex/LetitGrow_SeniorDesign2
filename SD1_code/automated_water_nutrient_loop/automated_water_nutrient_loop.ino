@@ -1,5 +1,9 @@
+
 // Sensor testing for Let it Grow
 // When testing on the PCB make sure to set the processor of the nano to the old bootloader
+
+// include sort library
+#include <KickSort.h>
 
 // include air/hum sensor library and initialize variables
 #include "DHT.h"
@@ -17,15 +21,15 @@ DallasTemperature sensors(&oneWire);
 // initailize water level variables
 int waterLevelPin=A3;// define pin A3
 
+// A2 is A0
 // define and include TDS library and variables
 // must download the zip file for the library and import it from https://wiki.dfrobot.com/Gravity__Analog_TDS_Sensor___Meter_For_Arduino_SKU__SEN0244
 #include <EEPROM.h>
 #include "GravityTDS.h"
-#define TdsSensorPin A2
+#define TdsSensorPin A0
 GravityTDS gravityTds;
 // define tds range
 float tdsLow = 600;
-float tdsHigh = 1000; 
 
 // define pH variables and calibration value
 #include <Arduino.h>
@@ -33,7 +37,7 @@ const float m = -6.16379;
 int phPin = A1;
 // define ph range
 float phLow = 5;
-float phHigh = 7; 
+float phHigh = 8; 
 
 // define pins for pumps
 int waterPumpPin = 2;
@@ -72,6 +76,30 @@ void setup() {
   pinMode(phBasePumpPin,OUTPUT);
   pinMode(nutrientAPumpPin,OUTPUT);
   pinMode(nutrientBPumpPin,OUTPUT);
+}
+
+// function to return ph value median of ten values 
+// (individual ph values can very greatly) 
+double getPhValue(){
+  double bufferArray[10];
+  int size = 10;
+
+  // fill array with po values
+  for (int i=0; i<size; i++){
+    bufferArray[i] = analogRead(phPin) * 5.0 / 1024;
+    delay(30);
+  }
+
+  // sort array
+  KickSort<double>::insertionSort(bufferArray, size);
+
+  // find median
+  double Po = (bufferArray[(size-1)/2] + bufferArray[size/2])/2.0;
+  // find ph value
+  double phValue = 6.86 - (2.7 - Po) * m;
+
+  return phValue;
+
 }
 
 
@@ -126,15 +154,70 @@ void printSensorVal(){
   Serial.println("ppm");
 
   // pH Sensor
-  float Po = analogRead(phPin) * 5.0 / 1024;
-  float phValue = 6.86 - (2.7 - Po) * m;
   Serial.print("ph value = ");
-  Serial.println(phValue);
+  Serial.println(getPhValue());
+
+
+}
+
+void printSensorValRasp(){  
+  // read air humidity
+  float airHumi = dht.readHumidity();
+  // read air temperature as Celsius
+  float airTempC = dht.readTemperature();
+  // read temperature as Fahrenheit
+  float airTempF = dht.readTemperature(true);
+
+  // read in water temperature sensor
+  sensors.requestTemperatures(); 
+  float waterTempC = sensors.getTempCByIndex(0);
+  float waterTempF = sensors.toFahrenheit(waterTempC);
+
+  // read in water level sensor
+  int waterLevelVal = digitalRead(waterLevelPin);// read the level value of pin A3 and assign if to val
+
+  // read in TDS sensor
+  gravityTds.setTemperature(waterTempC);  // set the temperature and execute temperature compensation
+  gravityTds.update();  //sample and calculate
+  float tdsValue = gravityTds.getTdsValue();  // then get the value
+
+  // print sensor values for testing
+  // Air/Hum sensor
+  Serial.print("AirHumidity: ");
+  Serial.print(airHumi);
+  Serial.print("%");
+
+  Serial.print("  |  "); 
+
+  Serial.print("AirTemperature: ");
+  Serial.print(airTempC);
+  Serial.print("°C ~ ");
+  Serial.print(airTempF);
+  Serial.println("°F");
+
+  // Water Temperature sensor
+  Serial.print("WaterTemp C:  ");
+  Serial.println(waterTempC);
+  Serial.print("WaterTemp F:  ");
+  Serial.println(waterTempF);
+
+  // Water Level Sensor
+  // 0 - Indicates no liquid, 1 - Indicates probe is submerged
+  Serial.println(waterLevelVal); // print the data from the sensor
+
+  // TDS sensor
+  Serial.print(tdsValue,0);
+  Serial.println("ppm");
+
+  // pH Sensor
+  Serial.print("ph value = ");
+  Serial.println(getPhValue());
 
 
 }
 
 // function to run all pumps at once for testing
+// HIGH activates pumps, LOW stops pumps
 void runAllPumps (){
 
     digitalWrite(waterPumpPin, HIGH);
@@ -151,9 +234,11 @@ void runAllPumps (){
 }
 
 // loop to check and raise water level
+// 0 means unsubmerged 1 means submerged
 void waterSensorLoop(){
   // reads in water sensor value
   int waterLevelVal = digitalRead(waterLevelPin);
+  // Serial.println(waterLevelVal);
 
   // loop while water sensor is unsubmerged
   while(waterLevelVal == 0)
@@ -163,25 +248,28 @@ void waterSensorLoop(){
     delay(waterPumpDelay);
     digitalWrite(waterPumpPin, LOW);
 
-    // wait 5 minutes
-    delay(300000);
+    // wait 30 sec
+    //delay(30000);
 
-    // test delay 10 seconds
-    //  delay(10000)
+    // test delay 5 seconds
+    delay(5000);
 
     // read new water sensor value sensor
     waterLevelVal = digitalRead(waterLevelPin);
 
     // read water level val to serial monitor
-    Serial.println(waterLevelVal);
+    // Serial.println(waterLevelVal);
   }
 }
 
 // loop to check water ph and bring water ph within threshold values
 void phSensorLoop(){
   // reads in ph sensor value
-  float Po = analogRead(phPin) * 5.0 / 1024;
-  float phVal = 6.86 - (2.7 - Po) * m;
+
+  double phVal = getPhValue();
+
+  // Serial.print("ph value = ");
+  // Serial.println(phVal);
   
   // loop while water ph is not within threshold values
   while(phVal < phLow || phVal > phHigh)
@@ -201,12 +289,17 @@ void phSensorLoop(){
       digitalWrite(phAcidPumpPin, LOW);
     }
     
-    // wait 5 minutes
-    delay(300000);
+
+    // wait 30 sec
+    //delay(30000);
+
+    // test delay 5 seconds
+    delay(5000);
 
     // read new ph sensor value sensor
-    Po = analogRead(phPin) * 5.0 / 1024;
-    phVal = 6.86 - (2.7 - Po) * m;
+    phVal = getPhValue();
+    // Serial.print("ph value = ");
+    // Serial.println(phVal);
   }
 }
 
@@ -215,9 +308,16 @@ void tdsSensorLoop(){
   // read water tempterature value and calibrate the tds sensor
   sensors.requestTemperatures(); 
   float waterTempC = sensors.getTempCByIndex(0);
-  gravityTds.setTemperature(waterTempC);  // set the temperature and execute temperature compensation
+
+  // set the temperature and execute temperature compensation
+  gravityTds.setTemperature(24); // manual
+  // gravityTds.setTemperature(waterTempC); // from water temperature sensor
+
   gravityTds.update();  //sample and calculate
   float tdsVal = gravityTds.getTdsValue();  // then get the value
+
+  // Serial.print("TDS value: ");
+  // Serial.println(tdsVal);
 
   // loop while water tds is not within threshold values
   while(tdsVal < tdsLow)
@@ -230,21 +330,57 @@ void tdsSensorLoop(){
     digitalWrite(nutrientAPumpPin, LOW);
     digitalWrite(nutrientBPumpPin, LOW);
     
-    // wait 5 minutes
-    delay(300000);
+    // wait 30 sec
+    //delay(30000);
+    
+    // test delay 5 sec
+    delay(5000);
 
     // read water tempterature value and calibrate the tds sensor
     sensors.requestTemperatures(); 
     float waterTempC = sensors.getTempCByIndex(0);
-    gravityTds.setTemperature(waterTempC);  // set the temperature and execute temperature compensation
+
+    // set the temperature and execute temperature compensation
+    gravityTds.setTemperature(24); // manual
+    // gravityTds.setTemperature(waterTempC); // from water temperature sensor
+
     gravityTds.update();  //sample and calculate
 
-    // read new ph sensor value sensor
+    // read new tds sensor value sensor
     tdsVal = gravityTds.getTdsValue();
+
+    // Serial.print("TDS value: ");
+    // Serial.println(tdsVal);
   }
 }
 
+void checkAirHumidity(){
+    // read air humidity
+  float airHumi = dht.readHumidity();
+  // read air temperature as Celsius
+  float airTempC = dht.readTemperature();
+  // read temperature as Fahrenheit
+  float airTempF = dht.readTemperature(true);
+
+  // Serial.print("AirHumidity: ");
+  // Serial.print(airHumi);
+  // Serial.print("%");
+
+  // Serial.print("  |  "); 
+
+  // Serial.print("AirTemperature: ");
+  // Serial.print(airTempC);
+  // Serial.print("°C ~ ");
+  // Serial.print(airTempF);
+  // Serial.println("°F");
+}
+
 void loop() {
+
+    // if (Serial.available() > 0) {
+    // String data = Serial.readStringUntil('\n');
+
+
 
   // sensor loops
   //waterSensorLoop();
@@ -253,11 +389,11 @@ void loop() {
   //checkAirHumidity();
 
   //testing sensors and pumps
-  runAllPumps();
+  //runAllPumps();
   //printSensorVal();
 
   // test delay
-  delay(10000);
+  delay(5000);
 
   // check sensors after an hour
   // 1 hour delay
