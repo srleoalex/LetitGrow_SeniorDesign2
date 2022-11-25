@@ -1,11 +1,19 @@
 import requests
 import serial
+import cv2 
+
+
 
 url = 'http://connect-letitgrow.com/API/addData.php'
+urlImage = 'http://connect-letitgrow.com/API/addImage.php'
 headers = {'Content-Type': 'application/json'}
 
 GardenID = 1
 
+# files = {'media': open('test.jpg', 'rb')}
+# requests.post(url, files=files)
+
+webcam = cv2.VideoCapture(0)
 
 if __name__ == '__main__':
     ser = serial.Serial('/dev/ttyUSB0', 9600, timeout=1)
@@ -35,6 +43,14 @@ if __name__ == '__main__':
               "airTemp": %f
             }""" % (GardenID, tds, pH, waterLevel, waterTemp, humidity, airTemp)
             
+            check, frame = webcam.read()
+            print(check) #prints true as long as the webcam is running
+            print(frame) #prints matrix values of each framecd 
+            cv2.imwrite(filename='saved_img.jpg', img=frame)
+    
+            files = {'media': open('saved_img.jpg', 'rb')}
+            requests.post(urlImage, files=files)
+
             req = requests.post(url, headers=headers, data=body)
             
             print(req.status_code)

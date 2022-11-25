@@ -7,7 +7,7 @@ DallasTemperature sensors(&oneWire);
 
 void setup() {
   // put your setup code here, to run once:
-  Serial.begin(9600)
+  Serial.begin(9600);
 
   // initialize water temperature sensor
   sensors.begin();
@@ -27,6 +27,6 @@ void loop() {
   Serial.print("WaterTemp F:  ");
   Serial.println(waterTempF);
 
-  delay(1000)
+  delay(1000);
 
 }

@@ -33,7 +33,7 @@ float tdsLow = 600;
 
 // define pH variables and calibration value
 #include <Arduino.h>
-const float m = -6.81818182; 
+const float m = -6.16379; 
 int phPin = A1;
 // define ph range
 float phLow = 5;
@@ -98,7 +98,7 @@ double getPhValue(){
   // find ph value
   double phValue = 6.86 - (2.7 - Po) * m;
 
-  return phValue-1.5;
+  return phValue;
 
 }
 
@@ -229,7 +229,7 @@ void runAllPumps (){
 void waterSensorLoop(){
   // reads in water sensor value
   int waterLevelVal = digitalRead(waterLevelPin);
-  Serial.println(waterLevelVal);
+  // Serial.println(waterLevelVal);
 
   // loop while water sensor is unsubmerged
   while(waterLevelVal == 0)
@@ -243,16 +243,16 @@ void waterSensorLoop(){
     //delay(120000);
     
     // wait 30 sec
-    //delay(30000);
+    delay(30000);
 
     // test delay 5 seconds
-    delay(5000);
+    // delay(5000);
 
     // read new water sensor value sensor
     waterLevelVal = digitalRead(waterLevelPin);
 
     // read water level val to serial monitor
-    Serial.println(waterLevelVal);
+    // Serial.println(waterLevelVal);
   }
 }
 
@@ -262,8 +262,8 @@ void phSensorLoop(){
 
   double phVal = getPhValue();
 
-  Serial.print("ph value = ");
-  Serial.println(phVal);
+  // Serial.print("ph value = ");
+  // Serial.println(phVal);
   
   // loop while water ph is not within threshold values
   while(phVal < phLow || phVal > phHigh)
@@ -287,15 +287,15 @@ void phSensorLoop(){
     //delay(120000);
 
     // wait 30 sec
-    //delay(30000);
+    delay(30000);
 
     // test delay 5 seconds
-    delay(5000);
+    // delay(5000);
 
     // read new ph sensor value sensor
     phVal = getPhValue();
-    Serial.print("ph value = ");
-    Serial.println(phVal);
+    // Serial.print("ph value = ");
+    // Serial.println(phVal);
   }
 }
 
@@ -312,8 +312,8 @@ void tdsSensorLoop(){
   gravityTds.update();  //sample and calculate
   float tdsVal = gravityTds.getTdsValue();  // then get the value
 
-  Serial.print("TDS value: ");
-  Serial.println(tdsVal);
+  // Serial.print("TDS value: ");
+  // Serial.println(tdsVal);
 
   // loop while water tds is not within threshold values
   while(tdsVal < tdsLow)
@@ -330,10 +330,10 @@ void tdsSensorLoop(){
     //delay(120000);
 
     // wait 30 sec
-    //delay(30000);
+    delay(30000);
     
     // test delay 5 sec
-    delay(5000);
+    // delay(5000);
 
     // read water tempterature value and calibrate the tds sensor
     sensors.requestTemperatures(); 
@@ -348,32 +348,37 @@ void tdsSensorLoop(){
     // read new tds sensor value sensor
     tdsVal = gravityTds.getTdsValue();
 
-    Serial.print("TDS value: ");
-    Serial.println(tdsVal);
+    // Serial.print("TDS value: ");
+    // Serial.println(tdsVal);
   }
 }
 
+// void modThreshold(data){
+  // tdsLow;
+  // phLow;
+  // phHigh;
+
+// }
 
 void loop() {
 
     // if (Serial.available() > 0) {
-    // String data = Serial.readStringUntil('\n');
+      // String data = Serial.readStringUntil('\n');
+      // modThreshold(data);
+    // }
 
   // sensor loops
   printSensorValRasp();
-  // waterSensorLoop();
-  // phSensorLoop();
-  // tdsSensorLoop();
-
+  waterSensorLoop();
+  phSensorLoop();
+  tdsSensorLoop();
 
   //testing sensors and pumps
-  // runAllPumps();
-  // printSensorVal();
-
-  // delay(5000);
+  //runAllPumps();
+  //printSensorVal();
 
   // test delay
-  delay(1800000);
+  delay(30000);
 
   // check sensors after an hour
   // 1 hour delay
